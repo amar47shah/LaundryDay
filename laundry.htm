@@ -6,21 +6,21 @@
 // Walker constructor.
 function Walker() {
   this.direction = 0; // -1 for 'to the left', 1 for 'to the right'
-  this.x_pos = 300;
+  this.x_pos = 600;
   this.height = 100;
   this.width = 75;
 }
 
 // Mom constructor.
 function Mom() {
-  this.y_pos = 600;
-  this.rate = 3;
+  this.y_pos = 100;
+  this.rate = 2;
 }
 
 // Baby constructor.
 function Baby() {
   this.y_pos = 100;  
-  this.rate = 5;
+  this.rate = 3;
 }
 
 // Prototype chain.
@@ -29,141 +29,35 @@ Mom.prototype.constructor = Mom;
 Baby.prototype = new Walker();
 Baby.prototype.constructor = Baby;
 
-// Garment constructor.
-function Garment(xp, yp, de, r) {
-  this.x_pos = xp;
-  this.y_pos = yp;
-  this.width = 90;
-  this.height = 100;
-  this.dom_element = de;
-  this.rate = r;
-  this.caught = false;
-}
-
 // the global Mom instance.
 var mom = new Mom();
 
 // the baby
 var baby = new Baby();
 
-// the falling clothes
-var garments = new Array();
-
 // global game state variables.
 var game_started = false;
 var game_ended = false;
-var garment_rate = 8000;
-var garment_start = 100;
-var score = 0;
-var missed = 0;
-var time = 90;
 
-// Creates a new falling garment and
-// schedules the addition of next garment.
-function addNewGarment() {
-  if (game_ended) {
-    return;
-  }
-  var falling_speed = Math.floor(Math.random() * 3) + 1;
-  var x_pos = Math.floor(Math.random() * 400);
-  
-  var dom_element = document.createElement("img");
-  dom_element.setAttribute('src', 'garment.png');
-  dom_element.setAttribute('height', '100');
-  dom_element.setAttribute('width', '90');
-  //dom_element.setAttribute('align', 'center');
-  dom_element.setAttribute('border', '0');
-  dom_element.setAttribute('vspace', '0');
-  dom_element.style.left = '' + x_pos + 'px';
-  dom_element.style.top = '' + garment_start + 'px';
-  dom_element.style.position = 'absolute';
-  
-  var garment = new Garment(x_pos, garment_start, dom_element, falling_speed);
-  
-  garments.push(garment);
-  document.getElementById('the_body').appendChild(dom_element);
-  
-  setTimeout(function(){ addNewGarment(); },
-             Math.floor(Math.random() * garment_rate));
- }
- 
- // Moves mom or baby.
- function moveWalker(w) {
+// Moves mom or baby.
+function moveWalker(w) {
    if (w.x_pos >= 0 && w.x_pos <= 1000) {
      w.x_pos = w.x_pos + w.rate * w.direction;
-     document.getElementById(w instanceof Mom ? 
-                             'mom_container' : 'baby_container' ).style.top = w.x_pos;
+     document.getElementById(
+               w instanceof Mom ? 'mom_container' : 'baby_container'
+               ).style.left = w.x_pos;
    }
-   w.x_pos = w.x_pos < 0    ?    0 : w.x_pos;
-   w.x_pos = w.x_pos > 1000 ? 1000 : w.x_pos;
- }
-
-
-// Returns true if items are close enough.
-function inRange(pos1, wid1, pos2, wid2) {
-  return !(pos2 > pos1 + wid1 || pos1 > pos2 + wid2);
+   w.x_pos = w.x_pos < 100    ?    100 : w.x_pos;
+   w.x_pos = w.x_pos > 1000   ?   1000 : w.x_pos;
+   if (w instanceof Baby && (w.x_pos == 100 || w.x_pos == 1000)) {
+     w.direction *= -1;
+   }     
 }
-
-function momCatchesGarment(m, g) {
-}
-
-
-function updateGarments(g) {
-  // For every traveler, add the delta. 
-  var last_x_pos = 0;
-  for (var i = 0; i < tr.travelers.length; ++i) {
-    var traveler = tr.travelers[i];
-    var proposed_x_pos = traveler.x_pos - tr.travelers[i].rate;
-    if (proposed_x_pos < 0) {
-      document.getElementById('the_body').removeChild(tr.travelers[i].dom_element);
-      tr.travelers.splice(i, 1);
-      --i;
-      if (!traveler.stamped) {
-        ++illegals;
-      }
-      continue;
-    } else if (guardBlocksTraveler(guard, tr.travelers[i])) {
-      // DO NOTHING
-    } else if (last_x_pos > proposed_x_pos) {
-      // If traveler now bumps into previous, move it back.
-      tr.travelers[i].x_pos = last_x_pos;
-    } else {
-      tr.travelers[i].x_pos = proposed_x_pos;
-    }
-    // Last x pos is actually the right edge of the last element.
-    last_x_pos = tr.travelers[i].x_pos + tr.travelers[i].width;
-  }
-
-  // Now draw them at their updated positions.
-  for (var i = 0; i < tr.travelers.length; ++i) {
-    tr.travelers[i].dom_element.style.left = tr.travelers[i].x_pos;
-  }
-}
-
 
 function gameLoop() {
   // Move walkers.
   moveWalker(mom);
   moveWalker(baby);
-
-  // Move garments.
-  updateGarments(garments);
-
-  // Detect stampings
-  var new_stamps = 0;
-  if (guard.stamping) {
-    new_stamps += detectStampings(traveler_row_1);
-    new_stamps += detectStampings(traveler_row_2);
-    new_stamps += detectStampings(traveler_row_3);
-    new_stamps += detectStampings(traveler_row_4);
-  }
-
-  // Update score
-  if (new_stamps > 0) {
-    score += new_stamps;
-    document.getElementById("score").innerHTML = '' + score;
-  }
-  document.getElementById("illegals").innerHTML = '' + illegals;
 
   // End game?
   if (!game_ended) {
@@ -176,34 +70,6 @@ function getKeyCode(e) {
   return e ? e.which : event.keyCode;
 }
 
-function getFinalRating(score, illegals) {
-  if (score >= 100) {
-    return "";
-  } else if (score >= 70) {
-    return "";
-  } else if (score >= 60) {
-    return "";
-  } else if (score >= 55) {
-    return "";
-  } else if (score >= 50) {
-    return "";
-  } else if (score >= 45) {
-    return "";
-  } else if (score >= 40) {
-    return "";
-  } 
-
-  if (score > illegals) {
-    return "";
-  } else if (score >= 30) {
-    return "";
-  } else if (score >= 20) {
-    return "";
-  } else {
-    return "";
-  }
-}
-
 function updateTime() {
   --time;  
   document.getElementById('time').innerHTML = '' + time;
@@ -214,11 +80,6 @@ function updateTime() {
     setTimeout(function(){ updateTime(); }, 1000);
   } else {
     game_ended = true;
-    document.getElementById('final_scoreboard').style.visibility = 'visible';
-    document.getElementById('final_score').innerHTML = '' + score;
-    document.getElementById('final_illegals').innerHTML = '' + illegals;
-    document.getElementById('final_rating').innerHTML = 
-        '' + getFinalRating(score, illegals);    
   }
 }
 
@@ -227,48 +88,31 @@ function processKeyDown(e) {
     // Start the game, schedule the first game loop call.
     document.getElementById('instructions').style.visibility = 'hidden';
     game_started = true;
+    baby.direction = Math.floor(Math.random() * 2) * 2 - 1;
     setTimeout(function(){ gameLoop() }, 5);
-    setTimeout(function(){ addNewGarment(); }, 
-               Math.floor(Math.random() * garment_rate));
     setTimeout(function(){ updateTime(); }, 1000);
   } else if (!game_ended) {
-    // Alter the guard's movement state.
-    if (getKeyCode(e) == 32) {  // SPACE (highest priority)
-      if (!guard.stamping) {
-        stamping_sound.play();
-      }
-      guard.stamping = true;
-      guard.direction = 0;
-    } else if (getKeyCode(e) == 40 && !guard.stamping) {  // UP
-      guard.direction = 1;
-    } else if (getKeyCode(e) == 38 && !guard.stamping) {  // DOWN
-      guard.direction = -1;
+    // Alter the mom's movement.
+    if (getKeyCode(e) == 37) {  // LEFT
+      mom.direction = -1;
+    } else if (getKeyCode(e) == 39) {  // RIGHT
+      mom.direction = 1;
     }
   }
 }
 
 function processKeyUp(e) {
-  if (getKeyCode(e) == 38 || getKeyCode(e) == 40) {
-    // Only stop the guard if we are actually releasing the arrow keys.
-    guard.direction = 0;
-  } else if (getKeyCode(e) == 32) {
-    guard.stamping = false;
+  if (getKeyCode(e) == 37 || getKeyCode(e) == 39) {
+    // Only stop the mom if we are actually releasing the arrow keys.
+    mom.direction = 0;
   }
 }
 </script>
 
-
-<body id="the_body" onkeyleft="processKeyLeft(event);" onkeyright="processKeyRight(event)">
-<div style="position:absolute; left: 700px">
-<img src=''>
-<table style="font-size: 25pt; font-family: monospace">
-  <tr><td>Passports Stamped: </td><td id="score">0</td></tr>
-  <tr><td>Illegal Entries: </td><td id="illegals">0</td></tr>
-  <tr><td>Time: </td><td id="time">90</td></tr>
-</table>
-<p style="font-family: monospace" id="instructions">(Hit space to begin. Use arrows to move.)</p>
+<body id="the_body" onkeydown="processKeyDown(event);" onkeyup="processKeyUp(event)">
+<div style="position:absolute; top : 600px">
+<p style="font-family: monospace" id="instructions">(Hit space to begin.  Use arrows to move.)</p>
 </div>
-
 
 <!-- Gray transparent gif covering everything, to display at the end of the game. -->
 <div style="position: absolute; top: 5px; left: 5px; height: 95%; width: 95%;
@@ -278,23 +122,33 @@ function processKeyUp(e) {
               font-family: monospace;">
     <h1 style="font-size: 30px;">Game Over!</h1>
     <table style="font-size: 25px;">
-      <tr><td>Passports Stamped: </td><td id="final_score"></td></tr>
-      <tr><td>Illegal Entries: </td><td id="final_illegals"></td></tr>
+      <tr><td>Clothes Caught: </td><td id="final_score"></td></tr>
+      <tr><td>Clothes Dropped: </td><td id="final_missed"></td></tr>
       <tr><td>Your Rating: </td><td id="final_rating"></td></tr>
     </table>
   </div>
 </div>
 
+<!-- Containers for mom and baby. -->
+<div id="mom_container" style="z-index: 1; top: 500px; position: absolute; left: 600px">
+  <img id="mom_1" style="position:absolute" height=100 width=75 align=baseline border=0 hspace=0 
+       src="mom_1.jpg">
+</div>
 
-<!-- Laundry hampers go here. They never move. Left to right. -->
-<p><img style="z-index: 0; left: 100px; position: absolute; top: 100px" 
-	height=100 width=108 align=baseline border=0 hspace=0 src=".png">
+<div id="baby_container" style="z-index: 1; top: 50px; position: absolute; left: 600px">
+  <img id="baby_1" style="position:absolute" height=100 width=75 align=baseline border=0 hspace=0 
+       src="baby_1.jpg">
+</div>
+
+
+<!-- Laundry baskets go here. They never move. Bottom to top. -->
+<p><img style="z-index: 0; top: 50px; position: absolute; left: 100px" 
+	height=100 width=108 align=baseline border=0 hspace=0 src="basket.png">
 </p>
 
-<p><img style="z-index: 0; left: 600px; position: absolute; top: 100px" 
-	height=100 width=108 align=baseline border=0 hspace=0 src=".png">
+<p><img style="z-index: 0; top: 50px; position: absolute; left: 1000px" 
+	height=100 width=108 align=baseline border=0 hspace=0 src="basket.png">
 </p>
 
 </body>
 </html>
-
