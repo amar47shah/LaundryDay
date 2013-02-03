@@ -41,15 +41,16 @@ var game_ended = false;
 
 // Moves mom or baby.
 function moveWalker(w) {
-   if (w.x_pos >= 0 && w.x_pos <= 1000) {
+   var l = 150; var r = 975;
+   if (w.x_pos >= l && w.x_pos <= r) {
      w.x_pos = w.x_pos + w.rate * w.direction;
      document.getElementById(
                w instanceof Mom ? 'mom_container' : 'baby_container'
                ).style.left = w.x_pos;
    }
-   w.x_pos = w.x_pos < 100    ?    100 : w.x_pos;
-   w.x_pos = w.x_pos > 1000   ?   1000 : w.x_pos;
-   if (w instanceof Baby && (w.x_pos == 100 || w.x_pos == 1000)) {
+   w.x_pos = w.x_pos < l    ?    l : w.x_pos;
+   w.x_pos = w.x_pos > r   ?     r : w.x_pos;
+   if ((w.x_pos == l || w.x_pos == r) && w instanceof Baby) {
      w.direction *= -1;
    }     
 }
@@ -130,24 +131,24 @@ function processKeyUp(e) {
 </div>
 
 <!-- Containers for mom and baby. -->
-<div id="mom_container" style="z-index: 1; top: 500px; position: absolute; left: 600px">
+<div id="mom_container" style="z-index: 1; top: 520px; position: absolute; left: 600px">
   <img id="mom_1" style="position:absolute" height=100 width=75 align=baseline border=0 hspace=0 
        src="mom_1.jpg">
 </div>
 
-<div id="baby_container" style="z-index: 1; top: 50px; position: absolute; left: 600px">
+<div id="baby_container" style="z-index: 1; top: 20px; position: absolute; left: 600px">
   <img id="baby_1" style="position:absolute" height=100 width=75 align=baseline border=0 hspace=0 
        src="baby_1.jpg">
 </div>
 
 
 <!-- Laundry baskets go here. They never move. Bottom to top. -->
-<p><img style="z-index: 0; top: 50px; position: absolute; left: 100px" 
-	height=100 width=108 align=baseline border=0 hspace=0 src="basket.png">
+<p><img style="z-index: 0; top: 30px; position: absolute; left: 30px" 
+	height=90 width=120 align=baseline border=0 hspace=0 src="basket.jpg">
 </p>
 
-<p><img style="z-index: 0; top: 50px; position: absolute; left: 1000px" 
-	height=100 width=108 align=baseline border=0 hspace=0 src="basket.png">
+<p><img style="z-index: 0; top: 30px; position: absolute; left: 1050px" 
+	height=90 width=120 align=baseline border=0 hspace=0 src="basket.jpg">
 </p>
 
 </body>
