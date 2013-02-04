@@ -4,6 +4,8 @@ States of America</title></head>
 
 <script language="JavaScript"> 
 
+// A game by Nels Beckman, www.nelsbeckman.com
+
 // Guard constructor.
 function Guard(yp) {
   this.direction = 0;  // -1 is down, 0 not moving, 1 is up.

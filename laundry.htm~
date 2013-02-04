@@ -3,6 +3,14 @@
 
 <script language="JavaScript">
 
+// Constants.
+const left_edge = 150; 
+const right_edge = 975;
+const garment_start = 140;
+const drop_wait = 500; 
+const baby_y_pos = 20;
+const mom_y_pos = 520;
+
 // Walker constructor.
 function Walker() {
   this.direction = 0; // -1 for 'to the left', 1 for 'to the right'
@@ -13,14 +21,23 @@ function Walker() {
 
 // Mom constructor.
 function Mom() {
-  this.y_pos = 100;
+  this.y_pos = mom_y_pos;
   this.rate = 2;
 }
 
 // Baby constructor.
 function Baby() {
-  this.y_pos = 100;  
+  this.y_pos = baby_y_pos;  
   this.rate = 3;
+}
+
+// Garment constructor. 
+function Garment(xp, r, de) {
+  this.x_pos = xp;
+  this.y_pos = garment_start;
+  this.rate = r;
+  this.dom_element = de;
+  this.caught = false;
 }
 
 // Prototype chain.
@@ -35,24 +52,75 @@ var mom = new Mom();
 // the baby
 var baby = new Baby();
 
+// the clothes
+var garments = new Array();
+
 // global game state variables.
 var game_started = false;
 var game_ended = false;
+var time = 90;
 
 // Moves mom or baby.
 function moveWalker(w) {
-   var l = 150; var r = 945;
-   if (w.x_pos >= l && w.x_pos <= r) {
+   if (w.x_pos >= left_edge && w.x_pos <= right_edge) {
      w.x_pos = w.x_pos + w.rate * w.direction;
      document.getElementById(
                w instanceof Mom ? 'mom_container' : 'baby_container'
                ).style.left = w.x_pos;
    }
-   w.x_pos = w.x_pos < l    ?    l : w.x_pos;
-   w.x_pos = w.x_pos > r   ?     r : w.x_pos;
-   if ((w.x_pos == l || w.x_pos == r) && w instanceof Baby) {
+   w.x_pos = w.x_pos < left_edge  ?  left_edge : w.x_pos;
+   w.x_pos = w.x_pos > right_edge ? right_edge : w.x_pos;
+   if ((w.x_pos == left_edge || w.x_pos == right_edge) && w instanceof Baby) {
      w.direction *= -1;
    }     
+}
+
+// Creates a new falling garment.
+function dropGarment(g, b) {
+  if (game_ended) {
+    return;
+  }
+  var garment_speed = Math.floor(Math.random() * 5) + 1;
+  var x_pos = b.x_pos;  
+  
+  var dom_element =  document.createElement('img');
+  dom_element.setAttribute('src', 'garment.jpg');
+  dom_element.setAttribute('height', '100');
+  dom_element.setAttribute('width', '100');
+  dom_element.setAttribute('align', 'baseline');
+  dom_element.setAttribute('border', '0');
+  dom_element.setAttribute('hspace', '0');
+  dom_element.style.top  = '' + garment_start + 'px';
+  dom_element.style.left = '' + x_pos + 'px';
+  dom_element.style.position = 'absolute';
+  
+  var garment = new Garment(x_pos, garment_speed, dom_element);
+  
+  // Add to falling garments array and add to DOM.
+  g.push(garment);
+  document.getElementById('the_body').appendChild(dom_element);  
+  
+  setTimeout(function(){ dropGarment(g, b); }, drop_wait);
+}
+
+// Updates falling garments and draws them in their new positions.
+function updateGarments(g) {
+  // Change the y-position of each garment.
+  for (var i = 0; i < g.length; ++i) {
+    var proposed_y_pos = g[i].y_pos + g[i].rate;
+    if (proposed_y_pos > 600) {
+      document.getElementById('the_body').removeChild(g[i].dom_element);
+      g.splice(i, 1);
+      --i;     
+    } else {
+      g[i].y_pos = proposed_y_pos;    
+    }
+  }
+  
+  // Draw each garment.
+  for (var i = 0; i < g.length; ++i) {
+    g[i].dom_element.style.top = g[i].y_pos;
+  }
 }
 
 function gameLoop() {
@@ -60,6 +128,9 @@ function gameLoop() {
   moveWalker(mom);
   moveWalker(baby);
 
+  // Update falling clothes.
+  updateGarments(garments);
+  
   // End game?
   if (!game_ended) {
     // Schedule this function again, 5ms later.
@@ -86,11 +157,12 @@ function updateTime() {
 
 function processKeyDown(e) {
   if (!game_started && getKeyCode(e) == 32) {
-    // Start the game, schedule the first game loop call.
+    // Start the game, schedule the first game loop call.    
     document.getElementById('instructions').style.visibility = 'hidden';
     game_started = true;
     baby.direction = Math.floor(Math.random() * 2) * 2 - 1;
     setTimeout(function(){ gameLoop() }, 5);
+    setTimeout(function(){ dropGarment(garments, baby); }, drop_wait);
     setTimeout(function(){ updateTime(); }, 1000);
   } else if (!game_ended) {
     // Alter the mom's movement.
@@ -111,8 +183,13 @@ function processKeyUp(e) {
 </script>
 
 <body id="the_body" onkeydown="processKeyDown(event);" onkeyup="processKeyUp(event)">
-<div style="position:absolute; top : 600px">
-<p style="font-family: monospace" id="instructions">(Hit space to begin.  Use arrows to move.)</p>
+<div style="position:absolute; top : 450px; font-family: monospace">
+<table>
+  <tr><td>Clothes Caught: </td><td id="score">0</td></tr>
+  <tr><td>Clothes Dropped: </td><td id="dropped">0</td></tr>
+  <tr><td>Time: </td><td id="time">90</td></tr>
+</table>
+<pid="instructions">(Hit space to begin.  Use arrows to move.)</p>
 </div>
 
 <!-- Gray transparent gif covering everything, to display at the end of the game. -->
@@ -143,12 +220,12 @@ function processKeyUp(e) {
 
 
 <!-- Laundry baskets go here. They never move. Bottom to top. -->
-<p><img style="z-index: 0; top: 30px; position: absolute; left: 20px" 
-	height=90 width=130 align=baseline border=0 hspace=0 src="basket.jpg">
+<p><img style="z-index: 0; top: 30px; position: absolute; left: 30px" 
+	height=90 width=120 align=baseline border=0 hspace=0 src="basket.jpg">
 </p>
 
-<p><img style="z-index: 0; top: 30px; position: absolute; left: 1020px" 
-	height=90 width=130 align=baseline border=0 hspace=0 src="basket.jpg">
+<p><img style="z-index: 0; top: 30px; position: absolute; left: 1050px" 
+	height=90 width=120 align=baseline border=0 hspace=0 src="basket.jpg">
 </p>
 
 </body>
