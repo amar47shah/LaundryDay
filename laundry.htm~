@@ -7,7 +7,7 @@
 const left_edge = 150; 
 const right_edge = 975;
 const garment_start = 140;
-const drop_wait = 500; 
+const drop_wait = 800; 
 const baby_y_pos = 20;
 const mom_y_pos = 520;
 
@@ -22,13 +22,14 @@ function Walker() {
 // Mom constructor.
 function Mom() {
   this.y_pos = mom_y_pos;
-  this.rate = 2;
+  this.rate = 5;
 }
 
 // Baby constructor.
 function Baby() {
   this.y_pos = baby_y_pos;  
   this.rate = 3;
+  this.drop_count = 0;
 }
 
 // Garment constructor. 
@@ -37,6 +38,8 @@ function Garment(xp, r, de) {
   this.y_pos = garment_start;
   this.rate = r;
   this.dom_element = de;
+  this.height = 80;
+  this.width = 100;
   this.caught = false;
 }
 
@@ -58,7 +61,9 @@ var garments = new Array();
 // global game state variables.
 var game_started = false;
 var game_ended = false;
-var time = 90;
+var score = 0;
+var missed = 0;
+var time = 30;
 
 // Moves mom or baby.
 function moveWalker(w) {
@@ -72,7 +77,8 @@ function moveWalker(w) {
    w.x_pos = w.x_pos > right_edge ? right_edge : w.x_pos;
    if ((w.x_pos == left_edge || w.x_pos == right_edge) && w instanceof Baby) {
      w.direction *= -1;
-   }     
+     w.drop_count = 0;
+   }
 }
 
 // Creates a new falling garment.
@@ -80,26 +86,30 @@ function dropGarment(g, b) {
   if (game_ended) {
     return;
   }
-  var garment_speed = Math.floor(Math.random() * 5) + 1;
-  var x_pos = b.x_pos;  
+  if (b.drop_count <= 3) {
+    var garment_speed = Math.floor(Math.random() * 3) + 3;
+    var x_pos = b.x_pos;  
   
-  var dom_element =  document.createElement('img');
-  dom_element.setAttribute('src', 'garment.jpg');
-  dom_element.setAttribute('height', '100');
-  dom_element.setAttribute('width', '100');
-  dom_element.setAttribute('align', 'baseline');
-  dom_element.setAttribute('border', '0');
-  dom_element.setAttribute('hspace', '0');
-  dom_element.style.top  = '' + garment_start + 'px';
-  dom_element.style.left = '' + x_pos + 'px';
-  dom_element.style.position = 'absolute';
+    var dom_element =  document.createElement('img');
+    dom_element.setAttribute('src', 'garment.jpg'); 
+    dom_element.setAttribute('height', '80');
+    dom_element.setAttribute('width', '100');
+    dom_element.setAttribute('align', 'baseline');
+    dom_element.setAttribute('border', '0');
+    dom_element.setAttribute('hspace', '0');
+    dom_element.style.top  = '' + garment_start + 'px';
+    dom_element.style.left = '' + x_pos + 'px';
+    dom_element.style.position = 'absolute';
   
-  var garment = new Garment(x_pos, garment_speed, dom_element);
+    var garment = new Garment(x_pos, garment_speed, dom_element);
   
-  // Add to falling garments array and add to DOM.
-  g.push(garment);
-  document.getElementById('the_body').appendChild(dom_element);  
+    // Keep count.
+    b.drop_count = b.drop_count + 1;  
   
+    // Add to falling garments array and add to DOM.
+    g.push(garment);
+    document.getElementById('the_body').appendChild(dom_element);  
+  }
   setTimeout(function(){ dropGarment(g, b); }, drop_wait);
 }
 
@@ -111,7 +121,8 @@ function updateGarments(g) {
     if (proposed_y_pos > 600) {
       document.getElementById('the_body').removeChild(g[i].dom_element);
       g.splice(i, 1);
-      --i;     
+      --i;
+      ++missed;     
     } else {
       g[i].y_pos = proposed_y_pos;    
     }
@@ -123,6 +134,42 @@ function updateGarments(g) {
   }
 }
 
+function inRange(a, b) {
+  // The +40 is to be less stingy. 
+  return !(a.x_pos > b.x_pos + b.width  + 20 || a.x_pos + a.width  + 20 < b.y_pos || 
+            a.y_pos > b.y_pos + b.height + 20 || a.y_pos + a.height + 20 < b.y_pos);
+}
+
+
+function detectCatch(g, m) {
+  var catches = 0;  
+  for (var i = 0; i < g.length; ++i) {
+    if (inRange(g[i], m)) {
+      document.getElementById('the_body').removeChild(g[i].dom_element);
+      g.splice(i, 1);
+      --i;
+      ++catches;
+    }
+  }
+  score += catches;
+}
+
+function getFinalRating(score, missed) {
+  if (missed < 8) {
+    return "Helicopter Mama";
+  }
+  if (missed > 22) {
+    return "Lenore Skenazy"
+  }  
+  if (score >= 24) {
+    return "Tidy Home-Maker";
+  }
+  if (score >= 18) {
+    return "Sleep-Deprived";
+  }
+  return "Well-Meaning Dad";   
+}
+
 function gameLoop() {
   // Move walkers.
   moveWalker(mom);
@@ -130,6 +177,13 @@ function gameLoop() {
 
   // Update falling clothes.
   updateGarments(garments);
+  
+  // Detect catches.
+  detectCatch(garments, mom);
+  
+  // Update score
+  document.getElementById("score").innerHTML = '' + score;
+  document.getElementById("missed").innerHTML = '' + missed;  
   
   // End game?
   if (!game_ended) {
@@ -152,6 +206,11 @@ function updateTime() {
     setTimeout(function(){ updateTime(); }, 1000);
   } else {
     game_ended = true;
+    document.getElementById('final_scoreboard').style.visibility = 'visible';
+    document.getElementById('final_score').innerHTML = '' + score;
+    document.getElementById('final_missed').innerHTML = '' + missed;
+    document.getElementById('final_rating').innerHTML = 
+        '' + getFinalRating(score, missed);  
   }
 }
 
@@ -167,7 +226,9 @@ function processKeyDown(e) {
   } else if (!game_ended) {
     // Alter the mom's movement.
     if (getKeyCode(e) == 37) {  // LEFT
-      mom.direction = -1;
+      if (mom.direction > 0) {       
+        mom.direction = -1;
+      }
     } else if (getKeyCode(e) == 39) {  // RIGHT
       mom.direction = 1;
     }
@@ -186,10 +247,10 @@ function processKeyUp(e) {
 <div style="position:absolute; top : 450px; font-family: monospace">
 <table>
   <tr><td>Clothes Caught: </td><td id="score">0</td></tr>
-  <tr><td>Clothes Dropped: </td><td id="dropped">0</td></tr>
+  <tr><td>Clothes Missed: </td><td id="missed">0</td></tr>
   <tr><td>Time: </td><td id="time">90</td></tr>
 </table>
-<pid="instructions">(Hit space to begin.  Use arrows to move.)</p>
+<p id="instructions">(Hit space to begin.  Use arrows to move.)</p>
 </div>
 
 <!-- Gray transparent gif covering everything, to display at the end of the game. -->
@@ -201,7 +262,7 @@ function processKeyUp(e) {
     <h1 style="font-size: 30px;">Game Over!</h1>
     <table style="font-size: 25px;">
       <tr><td>Clothes Caught: </td><td id="final_score"></td></tr>
-      <tr><td>Clothes Dropped: </td><td id="final_missed"></td></tr>
+      <tr><td>Clothes Missed: </td><td id="final_missed"></td></tr>
       <tr><td>Your Rating: </td><td id="final_rating"></td></tr>
     </table>
   </div>
