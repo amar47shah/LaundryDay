@@ -1,5 +1,8 @@
 <html>
-<head><title>Every Day Is Laundry Day</title></head>
+<head>
+  <title>Every Day Is Laundry Day</title>
+  <link rel="shortcut icon" href="favicon.ico">
+  </head>
 
 <script language="JavaScript">
 
@@ -174,17 +177,17 @@ function gameLoop() {
   // Move walkers.
   moveWalker(mom);
   moveWalker(baby);
+    
+  // Update score
+  document.getElementById("score").innerHTML = '' + score;
+  document.getElementById("missed").innerHTML = '' + missed;  
 
   // Update falling clothes.
   updateGarments(garments);
   
   // Detect catches.
   detectCatch(garments, mom);
-  
-  // Update score
-  document.getElementById("score").innerHTML = '' + score;
-  document.getElementById("missed").innerHTML = '' + missed;  
-  
+
   // End game?
   if (!game_ended) {
     // Schedule this function again, 5ms later.
@@ -225,10 +228,8 @@ function processKeyDown(e) {
     setTimeout(function(){ updateTime(); }, 1000);
   } else if (!game_ended) {
     // Alter the mom's movement.
-    if (getKeyCode(e) == 37) {  // LEFT
-      if (mom.direction > 0) {       
-        mom.direction = -1;
-      }
+    if (getKeyCode(e) == 37) {  // LEFT       
+      mom.direction = -1;
     } else if (getKeyCode(e) == 39) {  // RIGHT
       mom.direction = 1;
     }
@@ -278,7 +279,6 @@ function processKeyUp(e) {
   <img id="baby_1" style="position:absolute" height=100 width=75 align=baseline border=0 hspace=0 
        src="baby_1.jpg">
 </div>
-
 
 <!-- Laundry baskets go here. They never move. Bottom to top. -->
 <p><img style="z-index: 0; top: 30px; position: absolute; left: 30px" 
